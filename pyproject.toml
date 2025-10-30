@@ -1,0 +1,29 @@
+[project]
+name = "better-nested-serializer"
+version = "0.1.0"
+description = """An optimized DRF model serializer that normalizes nested objects into separate lists. This approach reduces JSON payload size and minimizes database queries by organizing related objects into distinct collections instead of duplicating them within parent objects."""
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "djangorestframework>=3.16.1",
+]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Include single-file top-level modules in the distribution
+py-modules = ["helpers"]
+
+[tool.setuptools.packages.find]
+# Find import packages (those with __init__.py)
+where = ["."]
+include = [
+    "exceptions",
+    "serializers",
+]
+exclude = [
+    "test_app",
+    "test_app.*",
+]
