@@ -1,7 +1,7 @@
 [project]
 name = "better-nested-serializer"
 version = "0.1.1"
-description = "An better DRF [Django REST Framework] serializer that normalizes nested objects into separate lists for improved performance"
+description = "A better DRF [Django REST Framework] serializer that normalizes nested objects into separate lists for improved performance"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
