@@ -1,6 +1,6 @@
 [project]
 name = "better-nested-serializer"
-version = "0.1.0"
+version = "0.1.1"
 description = "An better DRF [Django REST Framework] serializer that normalizes nested objects into separate lists for improved performance"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -57,4 +57,5 @@ exclude = [
 [dependency-groups]
 dev = [
     "build>=1.3.0",
+    "twine>=6.2.0",
 ]
