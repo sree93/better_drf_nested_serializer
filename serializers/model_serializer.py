@@ -2,10 +2,16 @@ from django.db.models.manager import BaseManager
 from rest_framework import serializers
 from rest_framework.fields import SkipField
 from rest_framework.relations import PKOnlyObject, PrimaryKeyRelatedField
-from rest_framework.serializers import ListSerializer
+from rest_framework.serializers import (
+    ListSerializer,
+    LIST_SERIALIZER_KWARGS_REMOVE,
+    LIST_SERIALIZER_KWARGS,
+)
+from rest_framework.utils.serializer_helpers import ReturnDict
 
 from exceptions.serializers import ActionProhibited
-from helpers import NestedDataHelper
+from helpers import NestedDataHelper, combine_related_objects
+from serializers.list_serializer import BetterListSerializer
 
 
 class BetterModelSerializer(serializers.ModelSerializer):
@@ -13,21 +19,61 @@ class BetterModelSerializer(serializers.ModelSerializer):
     def __init__(self, instance=None, is_nested=False, **kwargs):
         self.is_nested = is_nested
         self.kwargs = kwargs
-        if 'data' in kwargs:
-            raise ActionProhibited(self.__class__, action='Deserialization')
+        if "data" in kwargs:
+            raise ActionProhibited(self.__class__, action="Deserialization")
         super().__init__(instance=instance, **kwargs)
 
+    @classmethod
+    def many_init(cls, *args, **kwargs):
+        """
+        This method implements the creation of a `ListSerializer` parent
+        class when `many=True` is used. You can customize it if you need to
+        control which keyword arguments are passed to the parent, and
+        which are passed to the child.
+
+        Note that we're over-cautious in passing most arguments to both parent
+        and child classes in order to try to cover the general case. If you're
+        overriding this method you'll probably want something much simpler, eg:
+
+        @classmethod
+        def many_init(cls, *args, **kwargs):
+            kwargs['child'] = cls()
+            return CustomListSerializer(*args, **kwargs)
+        """
+        list_kwargs = {}
+        for key in LIST_SERIALIZER_KWARGS_REMOVE:
+            value = kwargs.pop(key, None)
+            if value is not None:
+                list_kwargs[key] = value
+        list_kwargs["child"] = cls(*args, **kwargs)
+        list_kwargs.update(
+            {
+                key: value
+                for key, value in kwargs.items()
+                if key in LIST_SERIALIZER_KWARGS
+            }
+        )
+        meta = getattr(cls, "Meta", None)
+        list_serializer_class = getattr(
+            meta, "list_serializer_class", cls.get_default_list_serializer_class()
+        )
+        return list_serializer_class(*args, **list_kwargs)
+
+    @classmethod
+    def get_default_list_serializer_class(cls):
+        return BetterListSerializer
+
     def validate(self, attrs):
-        raise ActionProhibited(self.__class__, action='Validation')
+        raise ActionProhibited(self.__class__, action="Validation")
 
     def create(self, validated_data):
-        raise ActionProhibited(self.__class__, action='Creation')
+        raise ActionProhibited(self.__class__, action="Creation")
 
     def update(self, instance, validated_data):
-        raise ActionProhibited(self.__class__, action='Update')
+        raise ActionProhibited(self.__class__, action="Update")
 
     def to_representation(self, instance):
-        ret = {}
+        primary_object = {}
         fields = self._readable_fields
 
         nested_helper = NestedDataHelper()
@@ -43,12 +89,14 @@ class BetterModelSerializer(serializers.ModelSerializer):
             #
             # For related fields with `use_pk_only_optimization` we need to
             # resolve the pk value.
-            check_for_none = attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+            check_for_none = (
+                attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+            )
             if check_for_none is None:
-                ret[field.field_name] = None
+                primary_object[field.field_name] = None
             else:
                 if isinstance(field, serializers.ModelSerializer):
-                    ret[field.field_name] = PrimaryKeyRelatedField(
+                    primary_object[field.field_name] = PrimaryKeyRelatedField(
                         queryset=field.Meta.model.objects.all()
                     ).to_representation(attribute)
 
@@ -57,17 +105,18 @@ class BetterModelSerializer(serializers.ModelSerializer):
                         model_class=field.Meta.model,
                         serializer_class=field.__class__,
                         # kwargs=field.kwargs,
-                        append_to_instance_cache=[attribute]
+                        append_to_instance_cache=[attribute],
                     )
 
-                elif isinstance(field, ListSerializer) and isinstance(field.child, serializers.ModelSerializer):
+                elif isinstance(field, ListSerializer) and isinstance(
+                    field.child, serializers.ModelSerializer
+                ):
 
                     if isinstance(attribute, BaseManager):
                         attribute = attribute.all()
 
-                    ret[field.field_name] = PrimaryKeyRelatedField(
-                        queryset=field.child.Meta.model.objects.all(),
-                        many=True
+                    primary_object[field.field_name] = PrimaryKeyRelatedField(
+                        queryset=field.child.Meta.model.objects.all(), many=True
                     ).to_representation(attribute)
 
                     nested_helper.add(
@@ -75,15 +124,17 @@ class BetterModelSerializer(serializers.ModelSerializer):
                         model_class=field.child.Meta.model,
                         serializer_class=field.child.__class__,
                         # kwargs=field.kwargs,
-                        append_to_instance_cache=attribute
+                        append_to_instance_cache=attribute,
                     )
                 else:
-                    ret[field.field_name] = field.to_representation(attribute)
+                    primary_object[field.field_name] = field.to_representation(
+                        attribute
+                    )
 
         related_objects = {}
 
         for field_name, field_info in nested_helper.items():
-            model_name = f'{field_info.model_class._meta.app_label}_{field_info.model_class._meta.model_name}'
+            model_name = f"{field_info.model_class._meta.app_label}_{field_info.model_class._meta.model_name}"
 
             serialized_data = field_info.serializer_class(
                 many=True, **field_info.kwargs
@@ -91,22 +142,22 @@ class BetterModelSerializer(serializers.ModelSerializer):
                 data=nested_helper.get_model_instances(field_info.model_class)
             )
             normalized_serialized_data = []
-            for item in serialized_data:
-                if isinstance(item, tuple):
-                    for key, value in item[1].items():
-                        related_objects.setdefault(key, {}).update(value)
-                    normalized_serialized_data.append(item[0])
-                else:
-                    normalized_serialized_data.append(item)
 
-            related_objects[model_name] = {_['id']: _ for _ in normalized_serialized_data}
+            if issubclass(field_info.serializer_class, BetterModelSerializer):
+                related_objects = combine_related_objects(
+                    related_objects, serialized_data["related_objects"]
+                )
+                normalized_serialized_data.extend(serialized_data["object"])
+            else:
+                normalized_serialized_data.extend(serialized_data)
 
-        return ret, related_objects
+            related_objects[model_name] = {
+                _["id"]: _ for _ in normalized_serialized_data
+            }
+
+        return {"object": primary_object, "related_objects": related_objects}
 
     @property
     def data(self):
-        main_data, related_data = self.to_representation(self.instance)
-        return {
-            'object'         : main_data,
-            'related_objects': related_data
-        }
+        ret = super().data
+        return ReturnDict(ret, serializer=self)
