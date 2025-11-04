@@ -22,10 +22,9 @@ wheels = [
 
 [[package]]
 name = "better-nested-serializer"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "." }
 dependencies = [
-    { name = "deepdiff" },
     { name = "deepmerge" },
     { name = "djangorestframework" },
 ]
@@ -40,7 +39,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "deepmerge", specifier = ">=2.0" },
     { name = "djangorestframework", specifier = ">=3" },
 ]
