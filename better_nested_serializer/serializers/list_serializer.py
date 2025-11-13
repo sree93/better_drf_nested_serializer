@@ -2,7 +2,7 @@ from django.db import models
 from rest_framework import serializers
 from rest_framework.utils.serializer_helpers import ReturnDict
 
-from helpers import combine_related_objects
+from better_nested_serializer.helpers import combine_related_objects
 
 
 class BetterListSerializer(serializers.ListSerializer):
@@ -10,7 +10,7 @@ class BetterListSerializer(serializers.ListSerializer):
         """
         List of object instances -> List of dicts of primitive datatypes.
         """
-        from serializers.model_serializer import BetterModelSerializer
+        from better_nested_serializer.serializers.model_serializer import BetterModelSerializer
 
         # Dealing with nested relationships, data can be a Manager,
         # so, first get a queryset from the Manager if needed

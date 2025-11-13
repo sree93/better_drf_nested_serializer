@@ -9,9 +9,9 @@ from rest_framework.serializers import (
 )
 from rest_framework.utils.serializer_helpers import ReturnDict
 
-from exceptions.serializers import ActionProhibited
-from helpers import NestedDataHelper, combine_related_objects
-from serializers.list_serializer import BetterListSerializer
+from better_nested_serializer.exceptions.serializers import ActionProhibited
+from better_nested_serializer.helpers import NestedDataHelper, combine_related_objects
+from better_nested_serializer.serializers.list_serializer import BetterListSerializer
 
 
 class BetterModelSerializer(serializers.ModelSerializer):

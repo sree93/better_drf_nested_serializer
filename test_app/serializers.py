@@ -1,7 +1,7 @@
 # Create specific serializers for testing
 from rest_framework import serializers
 
-from serializers.model_serializer import BetterModelSerializer
+from better_nested_serializer.serializers.model_serializer import BetterModelSerializer
 from test_app.models import Author, Blog, Publisher
 
 

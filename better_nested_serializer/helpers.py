@@ -42,7 +42,7 @@ class NestedDataHelper:
         return self._model_cache[model_class]
 
     def append_to_cache(self, model_class, model_instances):
-        self._model_cache[model_class] = model_instances
+        self._model_cache[model_class] = always_merger.merge(self._model_cache.get(model_class, {}), model_instances)
 
     def items(self):
         yield from self._mapping__field_info.items()

@@ -5,7 +5,7 @@ from deepdiff import DeepDiff
 from django.conf import settings
 from django.test import TestCase
 
-from helpers import combine_related_objects
+from better_nested_serializer.helpers import combine_related_objects
 from test_app.services import normalize_serializer_payload
 
 # Configure Django settings before importing models
@@ -155,7 +155,7 @@ class TestBetterModelSerializerBasic(TestCase):
 
     def test_prohibited_actions(self):
         # Test that prohibited actions raise exceptions
-        from exceptions.serializers import ActionProhibited
+        from better_nested_serializer.exceptions.serializers import ActionProhibited
 
         with self.assertRaises(ActionProhibited):
             BlogSerializerWithAuthorAndPublisher(data={"title": "test"})

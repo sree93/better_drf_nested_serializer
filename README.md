@@ -57,12 +57,12 @@ pip install better-nested-serializer
 
 ## Quick start
 1) Import the base class in your DRF serializers file:
-```text
-from serializers.model_serializer import BetterModelSerializer
+```python
+from better_nested_serializer.serializers.model_serializer import BetterModelSerializer
 ```
 
 2) Create your serializers. You can mix plain DRF serializers and `BetterModelSerializer`:
-```text
+```python
 from rest_framework import serializers
 from serializers.model_serializer import BetterModelSerializer
 from .models import Author, Blog, Publisher
@@ -87,7 +87,7 @@ class BlogSerializer(BetterModelSerializer):
 ```
 
 3) Use it anywhere you serialize a model instance (view, viewset, etc.):
-```text
+```python
 blog = Blog.objects.select_related("author", "publisher").get(pk=10)
 serialized = BlogSerializer(blog)
 Response(serialized.data)
@@ -116,7 +116,7 @@ Output example:
 
 ## Reverse relations (lists)
 You can also serialize reverse relations (like `author.blog_set`). Example:
-```text
+```python
 class BlogWithPublisherSerializer(BetterModelSerializer):
     publisher = PublisherSerializer(read_only=True)
     class Meta:

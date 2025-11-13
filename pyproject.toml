@@ -1,6 +1,6 @@
 [project]
 name = "better-nested-serializer"
-version = "0.1.4"
+version = "0.1.5"
 description = "A better DRF [Django REST Framework] serializer that normalizes nested objects into separate lists for improved performance"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -41,8 +41,7 @@ py-modules = ["helpers"]
 # Find import packages (those with __init__.py)
 where = ["."]
 include = [
-    "exceptions*",
-    "serializers*",
+    "better_nested_serializer*",
 ]
 exclude = [
     "test_app",
