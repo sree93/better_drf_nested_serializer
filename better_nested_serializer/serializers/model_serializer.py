@@ -137,7 +137,7 @@ class BetterModelSerializer(serializers.ModelSerializer):
             model_name = f"{field_info.model_class._meta.app_label}_{field_info.model_class._meta.model_name}"
 
             serialized_data = field_info.serializer_class(
-                many=True, **field_info.kwargs
+                many=True, context=self.context, **field_info.kwargs
             ).to_representation(
                 data=nested_helper.get_model_instances(field_info.model_class)
             )
